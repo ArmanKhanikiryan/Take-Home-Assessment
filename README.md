@@ -120,13 +120,13 @@ If you don't have `cpg.db` yet:
 git submodule update --init
 
 # 2. Build the generator (requires Go 1.25+)
-go build -o cpg-gen ./cpg-gen
+go build -o cpg-gen .
 
 # 3. Generate the database (takes 20–40 minutes, produces ~900 MB)
 ./cpg-gen \
-  -primary ./prometheus \
   -modules "./client_golang:github.com/prometheus/client_golang:client_golang,./prometheus-adapter:sigs.k8s.io/prometheus-adapter:adapter" \
-  -out cpg.db
+  ./prometheus \
+  cpg.db
 ```
 
 ## Running locally (without Docker)
