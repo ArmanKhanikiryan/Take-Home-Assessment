@@ -26,19 +26,19 @@ export const fetchPackageGraph = (limit = 30, module?: string): Promise<PackageG
   api.get('/packages/graph', { params: { limit, ...(module ? { module } : {}) } }).then(r => r.data);
 
 export const fetchPackageFunctions = (pkg: string): Promise<CpgNode[]> =>
-  api.get(`/packages/${encodeURIComponent(pkg)}/functions`).then(r => r.data);
+  api.get('/packages/functions', { params: { pkg } }).then(r => r.data);
 
 export const searchFunctions = (q: string): Promise<CpgNode[]> =>
   api.get('/functions/search', { params: { q, limit: 30 } }).then(r => r.data);
 
 export const fetchNeighborhood = (id: string): Promise<FunctionNeighborhood> =>
-  api.get(`/functions/${encodeURIComponent(id)}/neighborhood`).then(r => r.data);
+  api.get('/functions/neighborhood', { params: { id } }).then(r => r.data);
 
 export const fetchCallChain = (id: string, depth = 4): Promise<CallChainResult> =>
-  api.get(`/functions/${encodeURIComponent(id)}/call-chain`, { params: { depth } }).then(r => r.data);
+  api.get('/functions/call-chain', { params: { id, depth } }).then(r => r.data);
 
 export const fetchSource = (id: string): Promise<SourceResult> =>
-  api.get(`/functions/${encodeURIComponent(id)}/source`).then(r => r.data);
+  api.get('/functions/source', { params: { id } }).then(r => r.data);
 
 export const fetchFunction = (id: string): Promise<CpgNode> =>
-  api.get(`/functions/${encodeURIComponent(id)}`).then(r => r.data);
+  api.get('/functions/detail', { params: { id } }).then(r => r.data);
