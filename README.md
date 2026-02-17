@@ -4,7 +4,15 @@
 
 This archive ships `cpg-gen` — a Code Property Graph (CPG) generator for Go projects. A CPG fuses the abstract syntax tree, control flow graph, data flow graph, call graph, type system, and static analysis results into a single queryable graph stored as an SQLite database.
 
-Three Go modules are included: **Prometheus**, **client_golang**, and **prometheus-adapter**. You will add a fourth module yourself (see below).
+Three Go modules are referenced as git submodules: **Prometheus**, **client_golang**, and **prometheus-adapter**. You will add a fourth module yourself (see below).
+
+## Setup
+
+```bash
+git submodule update --init
+```
+
+This fetches the three source modules from GitHub.
 
 ## Prerequisites
 
@@ -86,3 +94,86 @@ Render the package dependency graph from `dashboard_package_graph` (~170 package
 ## Questions?
 
 If anything is unclear or you run into issues, reach out to [matvei@theartisan.ai](mailto:matvei@theartisan.ai).
+
+
+
+# CPG Explorer
+
+An in-browser IDE for navigating Go codebases through a Code Property Graph. Built on top of a ~900 MB SQLite database generated from Prometheus, client_golang, and prometheus-adapter.
+
+## Running with Docker
+
+The only prerequisite is Docker. You also need the generated `cpg.db` file in the project root (see below).
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Generating the database
+
+If you don't have `cpg.db` yet:
+
+```bash
+# 1. Fetch the Go source modules
+git submodule update --init
+
+# 2. Build the generator (requires Go 1.25+)
+go build -o cpg-gen ./cpg-gen
+
+# 3. Generate the database (takes 20–40 minutes, produces ~900 MB)
+./cpg-gen \
+  -primary ./prometheus \
+  -modules "./client_golang:github.com/prometheus/client_golang:client_golang,./prometheus-adapter:sigs.k8s.io/prometheus-adapter:adapter" \
+  -out cpg.db
+```
+
+## Running locally (without Docker)
+
+Requires Node.js 22+.
+
+```bash
+# Backend
+cd app/backend
+npm install
+npm run dev
+
+# Frontend (separate terminal)
+cd app/frontend
+npm install
+npm run dev
+```
+
+Frontend: http://localhost:5173
+Backend:  http://localhost:3001/api/health
+
+---
+
+## What I built
+
+The app has two main views: a **Package Architecture Map** and a **Call Graph Explorer**, plus a **Dashboard** with aggregate stats.
+
+**Package map** — renders the top N packages from `dashboard_package_graph` as a dagre-layouted directed graph. Packages are color-coded by subsystem (tsdb, promql, storage, etc.), sized by function count, and edges weighted by call frequency. You can filter by module and change how many packages are shown (25–150). Clicking a package loads its functions in the sidebar; double-clicking jumps directly to the call graph.
+
+**Call graph** — picks a function and fetches its immediate neighborhood: callers above, callees below, with animated edges. Clicking any neighbor re-centers the graph on that node. The source panel on the right shows the actual Go source for the selected function.
+
+**Dashboard** — overview stats, edge/node type distributions as bar charts, and a hotspot table ranking functions by a composite score of cyclomatic complexity and fan-in.
+
+## Key decisions
+
+**Stack: React + Node.js, not Go.** The task is frontend-heavy. A thin Node.js layer is the right tool for reading SQLite and serving JSON — no need to add a Go HTTP server on top of the existing Go toolchain.
+
+**React Flow + dagre instead of D3 or Cytoscape.** React Flow has a clean React-native API (hooks, node components as JSX) and handles pan/zoom/selection out of the box. Dagre gives readable hierarchical layouts without hand-tuning force parameters.
+
+**node:sqlite (Node 22 built-in) instead of better-sqlite3.** The native module approach was hitting version conflicts between the Node version used at install time and the one at runtime. The built-in module eliminates that entirely.
+
+**Focused subgraphs, not the full dataset.** Rendering all 435 packages at once produces an unreadable circle. Instead, the UI filters to the top N packages by function count and the top K edges by weight. The user can progressively explore by raising the limit or filtering to a single subsystem.
+
+**Pre-built dashboard views over raw query exposure.** The `dashboard_*` tables in the schema are already aggregated and indexed for the most common access patterns. Using them directly is faster and simpler than building a query interface on top of the raw `nodes`/`edges` tables.
+
+## Trade-offs
+
+The fourth module (alertmanager) was not included. Adding it caused a Go workspace conflict — the module appears in the workspace graph via transitive dependencies already, so `cpg-gen` refused to add it as a top-level module. The three-module database is already ~900 MB with ~555k nodes and ~1.5M edges, which is representative enough for the explorer.
+
+The bundle is large (~1.3 MB) because React Flow and CodeMirror are both substantial dependencies. Code splitting would help but wasn't worth the complexity at this scope.

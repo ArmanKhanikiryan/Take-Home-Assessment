@@ -1,0 +1,21 @@
+# database
+cpg.db
+cpg.db-shm
+cpg.db-wal
+
+# generated binary
+cpg-gen
+cpg-gen.log
+
+# fourth module attempt
+alertmanager/
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# IDE
+.idea/
+.vscode/

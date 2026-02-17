@@ -1,0 +1,17 @@
+services:
+  backend:
+    build: ./app/backend
+    environment:
+      - DB_PATH=/data/cpg.db
+      - PORT=3001
+    volumes:
+      - ./cpg.db:/data/cpg.db:ro
+    restart: unless-stopped
+
+  frontend:
+    build: ./app/frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
