@@ -74,10 +74,11 @@ router.get('/packages', (_req, res) => {
   }
 });
 
-// Functions in a package
-router.get('/packages/:pkg/functions', (req, res) => {
+// Functions in a package — pkg passed as query param to avoid %2F routing issues
+router.get('/packages/functions', (req, res) => {
   try {
-    const pkg = decodeURIComponent(req.params.pkg);
+    const pkg = req.query.pkg as string;
+    if (!pkg) return res.status(400).json({ error: 'pkg query param required' });
     const functions = query(`
       SELECT id, name, file, line, end_line, type_info
       FROM nodes

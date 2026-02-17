@@ -24,9 +24,10 @@ router.get('/functions/search', (req, res) => {
 });
 
 // Direct neighborhood: callers + callees (for call graph view)
-router.get('/functions/:id/neighborhood', (req, res) => {
+router.get('/functions/neighborhood', (req, res) => {
   try {
-    const id = decodeURIComponent(req.params.id);
+    const id = req.query.id as string;
+    if (!id) return res.status(400).json({ error: 'id query param required' });
 
     // The center node itself
     const center = queryOne(`SELECT id, name, package, file, line, end_line, kind FROM nodes WHERE id = @id`, { id });
@@ -59,9 +60,10 @@ router.get('/functions/:id/neighborhood', (req, res) => {
 });
 
 // Transitive call chain (what this function eventually calls)
-router.get('/functions/:id/call-chain', (req, res) => {
+router.get('/functions/call-chain', (req, res) => {
   try {
-    const id = decodeURIComponent(req.params.id);
+    const id = req.query.id as string;
+    if (!id) return res.status(400).json({ error: 'id query param required' });
     const depth = Math.min(Number(req.query.depth ?? 4), 8);
 
     const chain = query(`
@@ -100,9 +102,10 @@ router.get('/functions/:id/call-chain', (req, res) => {
 });
 
 // Source code for a function (from the sources table)
-router.get('/functions/:id/source', (req, res) => {
+router.get('/functions/source', (req, res) => {
   try {
-    const id = decodeURIComponent(req.params.id);
+    const id = req.query.id as string;
+    if (!id) return res.status(400).json({ error: 'id query param required' });
     const node = queryOne(`SELECT id, name, file, line, end_line, package FROM nodes WHERE id = @id`, { id });
     if (!node) return res.status(404).json({ error: 'Node not found' });
 
@@ -127,9 +130,10 @@ router.get('/functions/:id/source', (req, res) => {
 });
 
 // Single node detail
-router.get('/functions/:id', (req, res) => {
+router.get('/functions/detail', (req, res) => {
   try {
-    const id = decodeURIComponent(req.params.id);
+    const id = req.query.id as string;
+    if (!id) return res.status(400).json({ error: 'id query param required' });
     const node = queryOne(`
       SELECT n.*, m.cyclomatic_complexity, m.fan_in, m.fan_out, m.loc, m.num_params
       FROM nodes n
